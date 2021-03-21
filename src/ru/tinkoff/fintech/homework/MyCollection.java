@@ -1,12 +1,9 @@
 package ru.tinkoff.fintech.homework;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
+import java.util.*;
 
-public class MyCollection<E> implements Collection<E>,Iterable<E> {
+
+public class MyCollection<E> implements Collection<E>, Iterable<E> {
 
     private int size;
     private Object[] elementData = new Object[3];
@@ -14,13 +11,19 @@ public class MyCollection<E> implements Collection<E>,Iterable<E> {
 //    public MyCollection(Object[] elementData) {
 //        this.elementData = elementData;
 //        size = elementData.length;
-//    }
-// Ща соберем коллекцию с нуля
+
+
+    @Override
+    public String toString() {
+        return "MyCollection{" +
+                "elementData=" + Arrays.toString(elementData) +
+                '}';
+    }
 
     @Override
     public boolean add(E e) {
         if (size == elementData.length) {
-            elementData = Arrays.copyOf(elementData, (int)(size * 1.5f));
+            elementData = Arrays.copyOf(elementData, (int) (size * 1.5f));
             System.out.println("new capacity: " + elementData.length);
         }
         elementData[size++] = e;
@@ -29,23 +32,99 @@ public class MyCollection<E> implements Collection<E>,Iterable<E> {
 
     @Override
     public int size() {
-        return size;
+        return this.size;
     }
 
     @Override
     public boolean isEmpty() {
-        return size == 0;
+        return this.size() == 0;
     }
 
     @Override
-    public boolean contains(Object o) {
+    public boolean contains(final Object o) {
+        for (int i = 0; i < size; i++) {
+            if (elementData[i].equals(o)) {
+                return true;
+            }
+        }
         return false;
+    }
+
+    @Override
+    public boolean remove(Object o) {
+        for (int i = 0; i < size; i++) {
+            if (elementData[i].equals(o)) {
+                if (i != this.size - 1) {
+                    System.arraycopy(elementData, i + 1, elementData, i, size - i);
+                } else {
+                    elementData[i] = null;
+                }
+                size--;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean removeAll(final Collection<?> c) {
+        for (final Object removeItem : c) {
+            for (final Object item : this) {
+                if (item.equals(removeItem)) {
+                    remove(item);
+                    break;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+        Boolean contains = false;
+        for (final Object containItem : c) {
+            contains = false;
+            for (final Object item : this) {
+                if (item.equals(containItem)) {
+                    contains = true;
+                    break;
+                }
+            }
+            if (!contains) {
+                return contains;
+            }
+        }
+        return contains;
+    }
+
+    @Override
+    public boolean retainAll(final Collection<?> c) {
+        for (final Object arr : this) {
+            if (!c.contains(arr))
+                this.remove(arr);
+        }
+        return true;
+    }
+
+    @Override
+    public void clear() {
+        elementData = (Object[]) new Object[1];
+        size = 0;
     }
 
     @Override
     public Iterator<E> iterator() {
         return new MyIterator<>();
     }
+
+    @Override
+    public boolean addAll(Collection<? extends E> c) {
+        for (final E item : c) {
+            add(item);
+        }
+        return true;
+    }
+
 
     @Override
     public Object[] toArray() {
@@ -57,56 +136,11 @@ public class MyCollection<E> implements Collection<E>,Iterable<E> {
         return null;
     }
 
-    @Override
-    public <T> T[] toArray(IntFunction<T[]> generator) {
-        return null;
-    }
 
+    private class MyIterator<T> implements Iterator<T> {
 
-
-    @Override
-    public boolean remove(Object o) {
-        return false;
-    }
-
-    @Override
-    public boolean containsAll(Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public boolean addAll(Collection<? extends E> c) {
-        return false;
-    }
-
-    @Override
-    public boolean removeAll(Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public boolean removeIf(Predicate<? super E> filter) {
-        return false;
-    }
-
-    @Override
-    public boolean retainAll(Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public void clear() {
-    }
-
-    private class MyIterator<T> implements Iterator<T>{
-
-        private int cursor;
-
-
-        @Override
-        public void remove() {
-
-        }
+        private int cursor = 0;
+        private T lastRet = null;
 
         @Override
         public boolean hasNext() {
@@ -114,8 +148,28 @@ public class MyCollection<E> implements Collection<E>,Iterable<E> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public T next() {
-            return (T) elementData[cursor++];
+            if (cursor >= size) {
+                throw new NoSuchElementException();
+            }
+            lastRet = (T) elementData[cursor++];
+            return lastRet;
         }
+
+        @Override
+        public void remove() {
+            if (lastRet == null)
+                throw new IllegalStateException();
+
+            try {
+                MyCollection.this.remove(lastRet);
+                cursor--;
+                lastRet = null;
+            } catch (IndexOutOfBoundsException ex) {
+                throw new ConcurrentModificationException();
+            }
+        }
+
     }
 }
